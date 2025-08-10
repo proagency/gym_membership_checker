@@ -11,9 +11,8 @@
   --line:#e5e7eb;
 }
 
-body {
-  font-family: 'Poppins', sans-serif;
-}
+/* Global font */
+html, body { font-family: 'Poppins', sans-serif; }
 
 /* Overlay */
 .overlay {
@@ -26,7 +25,7 @@ body {
 
 /* Card */
 .card {
-  width: 100%; max-width: 560px; background: var(--bg);
+  width: 100%; max-width: 600px; background: var(--bg);
   border-radius: 16px; box-shadow: 0 20px 60px rgba(0,0,0,0.25);
   overflow: hidden; animation: fadeInScale .25s ease;
 }
@@ -39,30 +38,27 @@ body {
 
 /* Inputs */
 .input-wrap { display: flex; gap: 8px; }
-#manualInput {
+#manualInput, #branchInput {
   flex:1; border:1px solid var(--line); border-radius:10px; padding:10px 12px; font-size:14px;
+  font-family: 'Poppins', sans-serif;
 }
-#lookupBtn {
+#lookupBtn, #saveBranchBtn {
   padding:10px 16px; border-radius:10px; border:none; background:var(--brand); color:#fff;
-  font-size:14px; cursor:pointer; transition: filter .15s ease;
+  font-size:14px; font-family: 'Poppins', sans-serif;
+  cursor:pointer; transition: filter .15s ease;
 }
-#lookupBtn:hover { filter: brightness(.95); }
+#lookupBtn:hover, #saveBranchBtn:hover { filter: brightness(.95); }
+#lookupBtn:disabled, #saveBranchBtn:disabled { background:#cbd5e1; cursor:not-allowed; }
 .ghost-btn{
   all:unset; cursor:pointer; padding:6px 10px; border-radius:8px; border:1px solid var(--line);
-  font-size:12px; background:#fff;
+  font-size:12px; background:#fff; font-family: 'Poppins', sans-serif;
 }
 .ghost-btn:hover{ background:#f1f5f9; }
-
-#lookupBtn:disabled {
-  background: #cbd5e1; /* light gray */
-  cursor: not-allowed;
-}
-
 
 /* Status + KV table */
 .status { display:flex; align-items:center; gap:8px; font-weight:600; font-size:15px; color:var(--ink); }
 .status .dot { width:12px; height:12px; border-radius:50%; box-shadow:0 0 0 2px #fff inset; }
-.kv { display:grid; grid-template-columns: 130px 1fr; gap:10px 16px; }
+.kv { display:grid; grid-template-columns: 150px 1fr; gap:10px 16px; }
 .kv .k { color: var(--muted); font-size: 13px; font-weight: 500; }
 .kv .v { color: var(--ink); font-size: 14px; }
 
@@ -78,10 +74,12 @@ pre.json {
   display:inline-flex; align-items:center; gap:8px;
   padding:10px 14px; border-radius:9999px; border:1px solid var(--line);
   background:#fff; box-shadow:0 8px 20px rgba(0,0,0,0.1);
-  cursor:pointer; font-size:14px; font-weight:500; transition: box-shadow .2s ease, transform .2s ease;
+  cursor:pointer; font-size:14px; font-weight:500;
+  transition: box-shadow .2s ease, transform .2s ease;
 }
 .fab:hover{ box-shadow:0 12px 28px rgba(0,0,0,0.12); transform: translateY(-2px); }
 .badge{ width:10px; height:10px; border-radius:50%; background:var(--neutral); box-shadow:0 0 0 2px #fff inset; }
 .label{ white-space:nowrap; }
 
 @keyframes fadeInScale { from{ transform:scale(.95); opacity:0 } to{ transform:scale(1); opacity:1 } }
+
