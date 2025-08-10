@@ -396,3 +396,12 @@
     setTimeout(bind, 0);
   }
 })();
+
+closeModal.addEventListener("click", () => {
+  overlay.classList.remove("show");
+  manualInput.value = "";
+  lookupBtn.disabled = true; // disable until next input
+  resultCard.innerHTML = "";
+  resultRaw.textContent = "Waiting for scan…";
+});
+
