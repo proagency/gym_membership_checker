@@ -1,6 +1,6 @@
-/*! Gym Membership Checker - single-file loader */
+/*! Gym Membership Checker - single-file loader (scoped) */
 (function () {
-  if (window.__gymWidgetLoaded) return; // guard against double-inject
+  if (window.__gymWidgetLoaded) return;
   window.__gymWidgetLoaded = true;
 
   // ----------------- CONFIG -----------------
@@ -14,51 +14,100 @@
     ui: { success: "#16a34a", warning: "#d97706", danger: "#dc2626", neutral: "#64748b" }
   };
 
-  // ----------------- FONT & CSS -----------------
-  const font = document.createElement("link");
-  font.rel = "stylesheet";
-  font.href = "https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap";
-  document.head.appendChild(font);
+  // ----------------- FONT -----------------
+  (function addFont(){
+    if (document.querySelector('link[data-gym-font]')) return;
+    const font = document.createElement("link");
+    font.rel = "stylesheet";
+    font.href = "https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap";
+    font.setAttribute('data-gym-font','1');
+    document.head.appendChild(font);
+  })();
 
+  // ----------------- SCOPED CSS -----------------
   const css = `
-:root{
-  --brand:#2563eb; --success:#16a34a; --warning:#d97706; --danger:#dc2626;
-  --neutral:#64748b; --ink:#0f172a; --muted:#64748b; --bg:#ffffff; --panel:#f8fafc; --line:#e5e7eb;
+#gym-widget { all: initial; font-family: 'Poppins', sans-serif; }
+#gym-widget, #gym-widget * { box-sizing: border-box; font-family: 'Poppins', sans-serif; }
+
+/* Overlay */
+#gym-widget .overlay {
+  position: fixed; inset: 0;
+  background: rgba(15,23,42,0.6);
+  display: none; align-items: center; justify-content: center;
+  padding: 16px; z-index: 999999;
 }
-html, body { font-family: 'Poppins', sans-serif; }
-.overlay { position: fixed; inset: 0; background: rgba(15,23,42,0.6); display: none; align-items: center; justify-content: center; padding: 16px; z-index: 999999; }
-.overlay.show { display: flex; }
-.card { width: 100%; max-width: 600px; background: var(--bg); border-radius: 16px; box-shadow: 0 20px 60px rgba(0,0,0,0.25); overflow: hidden; animation: fadeInScale .25s ease; }
-.card .hd { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; background: var(--panel); border-bottom: 1px solid var(--line); }
-.card .ttl { font-weight: 600; font-size: 16px; color: var(--ink); }
-.card .bd { padding: 16px; display: grid; gap: 16px; }
-.input-wrap { display: flex; gap: 8px; }
-#manualInput, #branchInput { flex:1; border:1px solid var(--line); border-radius:10px; padding:10px 12px; font-size:14px; font-family:'Poppins',sans-serif; }
-#lookupBtn, #saveBranchBtn { padding:10px 16px; border-radius:10px; border:none; background:var(--brand); color:#fff; font-size:14px; font-family:'Poppins',sans-serif; cursor:pointer; transition:filter .15s ease; }
-#lookupBtn:hover, #saveBranchBtn:hover { filter:brightness(.95); }
-#lookupBtn:disabled, #saveBranchBtn:disabled { background:#cbd5e1; cursor:not-allowed; }
-.ghost-btn{ all:unset; cursor:pointer; padding:6px 10px; border-radius:8px; border:1px solid var(--line); font-size:12px; background:#fff; font-family:'Poppins',sans-serif; }
-.ghost-btn:hover{ background:#f1f5f9; }
-.status { display:flex; align-items:center; gap:8px; font-weight:600; font-size:15px; color:var(--ink); }
-.status .dot { width:12px; height:12px; border-radius:50%; box-shadow:0 0 0 2px #fff inset; }
-.kv { display:grid; grid-template-columns: 150px 1fr; gap:10px 16px; }
-.kv .k { color: var(--muted); font-size: 13px; font-weight: 500; }
-.kv .v { color: var(--ink); font-size: 14px; }
-pre.json { margin: 0; padding: 14px; background: #0f172a; color: #e2e8f0; border-radius: 12px; max-height: 50vh; overflow: auto; font-size: 12px; line-height: 1.4; }
-.fab{ position: fixed; bottom: 20px; right: 20px; z-index:999999; display:inline-flex; align-items:center; gap:8px; padding:10px 14px; border-radius:9999px; border:1px solid var(--line); background:#fff; box-shadow:0 8px 20px rgba(0,0,0,0.1); cursor:pointer; font-size:14px; font-weight:500; transition: box-shadow .2s ease, transform .2s ease; }
-.fab:hover{ box-shadow:0 12px 28px rgba(0,0,0,0.12); transform: translateY(-2px); }
-.badge{ width:10px; height:10px; border-radius:50%; background:var(--neutral); box-shadow:0 0 0 2px #fff inset; }
-.label{ white-space:nowrap; }
-@keyframes fadeInScale { from{ transform:scale(.95); opacity:0 } to{ transform:scale(1); opacity:1 } }
+#gym-widget .overlay.show { display: flex; }
+
+/* Card */
+#gym-widget .card {
+  width: 100%; max-width: 600px; background: #fff;
+  border-radius: 16px; box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+  overflow: hidden; animation: gym-fadeInScale .25s ease;
+}
+#gym-widget .card .hd {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 18px; background: #f8fafc; border-bottom: 1px solid #e5e7eb;
+}
+#gym-widget .card .ttl { font-weight: 600; font-size: 16px; color: #0f172a; }
+#gym-widget .card .bd { padding: 16px; display: grid; gap: 16px; }
+
+/* Inputs */
+#gym-widget .input-wrap { display: flex; gap: 8px; }
+#gym-widget #manualInput, 
+#gym-widget #branchInput {
+  flex:1; border:1px solid #e5e7eb; border-radius:10px; padding:10px 12px; font-size:14px;
+}
+#gym-widget #lookupBtn, 
+#gym-widget #saveBranchBtn {
+  padding:10px 16px; border-radius:10px; border:none; background:#2563eb; color:#fff;
+  font-size:14px; cursor:pointer; transition: filter .15s ease;
+}
+#gym-widget #lookupBtn:hover, 
+#gym-widget #saveBranchBtn:hover { filter: brightness(.95); }
+#gym-widget #lookupBtn:disabled, 
+#gym-widget #saveBranchBtn:disabled { background:#cbd5e1; cursor:not-allowed; }
+#gym-widget .ghost-btn{
+  all:unset; cursor:pointer; padding:6px 10px; border-radius:8px; border:1px solid #e5e7eb;
+  font-size:12px; background:#fff;
+}
+#gym-widget .ghost-btn:hover{ background:#f1f5f9; }
+
+/* Status + KV table */
+#gym-widget .status { display:flex; align-items:center; gap:8px; font-weight:600; font-size:15px; color:#0f172a; }
+#gym-widget .status .dot { width:12px; height:12px; border-radius:50%; box-shadow:0 0 0 2px #fff inset; }
+#gym-widget .kv { display:grid; grid-template-columns: 150px 1fr; gap:10px 16px; }
+#gym-widget .kv .k { color: #64748b; font-size: 13px; font-weight: 500; }
+#gym-widget .kv .v { color: #0f172a; font-size: 14px; }
+
+/* Raw JSON */
+#gym-widget pre.json {
+  margin: 0; padding: 14px; background: #0f172a; color: #e2e8f0;
+  border-radius: 12px; max-height: 50vh; overflow: auto; font-size: 12px; line-height: 1.4;
+}
+
+/* FAB */
+#gym-widget .fab{
+  position: fixed; bottom: 20px; right: 20px; z-index:999999;
+  display:inline-flex; align-items:center; gap:8px;
+  padding:10px 14px; border-radius:9999px; border:1px solid #e5e7eb;
+  background:#fff; box-shadow:0 8px 20px rgba(0,0,0,0.1);
+  cursor:pointer; font-size:14px; font-weight:500;
+  transition: box-shadow .2s ease, transform .2s ease;
+}
+#gym-widget .fab:hover{ box-shadow:0 12px 28px rgba(0,0,0,0.12); transform: translateY(-2px); }
+#gym-widget .badge{ width:10px; height:10px; border-radius:50%; background:#64748b; box-shadow:0 0 0 2px #fff inset; }
+#gym-widget .label{ white-space:nowrap; }
+
+@keyframes gym-fadeInScale { from{ transform:scale(.95); opacity:0 } to{ transform:scale(1); opacity:1 } }
 `;
   const style = document.createElement("style");
   style.setAttribute("data-gym-css-inline", "1");
   style.textContent = css;
   document.head.appendChild(style);
 
-  // ----------------- HTML -----------------
+  // ----------------- HTML (scoped container) -----------------
   const root = document.createElement("div");
-  root.id = "gymWidgetRoot";
+  root.id = "gym-widget";
   root.innerHTML = `
 <button class="fab" id="fabBtn" title="Branch: Main">
   <span class="badge" id="statusBadge" title="Branch: Main"></span>
@@ -87,27 +136,33 @@ pre.json { margin: 0; padding: 14px; background: #0f172a; color: #e2e8f0; border
     </div>
   </div>
 </div>`;
-  document.addEventListener("DOMContentLoaded", () => document.body.appendChild(root));
-  if (document.readyState === "complete" || document.readyState === "interactive") document.body.appendChild(root);
+  function mount() {
+    if (!document.body.contains(root)) document.body.appendChild(root);
+  }
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", mount);
+  } else {
+    mount();
+  }
 
-  // ----------------- JS LOGIC -----------------
-  function $(id) { return document.getElementById(id); }
+  // ----------------- JS LOGIC (scoped queries) -----------------
+  function q(sel) { return root.querySelector(sel); }
   const els = {
-    overlay: $("overlay"),
-    fabBtn: $("fabBtn"),
-    statusBadge: $("statusBadge"),
-    branchInput: $("branchInput"),
-    saveBranchBtn: $("saveBranchBtn"),
-    manualInput: $("manualInput"),
-    lookupBtn: $("lookupBtn"),
-    closeModal: $("closeModal"),
-    toggleBtn: $("toggleViewBtn"),
-    resultCard: $("resultCard"),
-    resultRaw: $("resultRaw"),
+    overlay: q("#overlay"),
+    fabBtn: q("#fabBtn"),
+    statusBadge: q("#statusBadge"),
+    branchInput: q("#branchInput"),
+    saveBranchBtn: q("#saveBranchBtn"),
+    manualInput: q("#manualInput"),
+    lookupBtn: q("#lookupBtn"),
+    closeModal: q("#closeModal"),
+    toggleBtn: q("#toggleViewBtn"),
+    resultCard: q("#resultCard"),
+    resultRaw: q("#resultRaw"),
   };
   const state = { buffer: "", lastKeyTime: 0, lastStatus: null, lastData: null };
 
-  // Kiosk ID
+  // Utilities
   function uuidv4() {
     return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, c => {
       const r = (crypto.getRandomValues(new Uint8Array(1))[0]) & 15;
@@ -125,7 +180,6 @@ pre.json { margin: 0; padding: 14px; background: #0f172a; color: #e2e8f0; border
   }
   const KIOSK_ID = getKioskId();
 
-  // Branch
   function getBranch() {
     const qp = new URLSearchParams(location.search);
     const fromUrl = (qp.get("branch") || qp.get("b"))?.trim();
@@ -219,7 +273,7 @@ pre.json { margin: 0; padding: 14px; background: #0f172a; color: #e2e8f0; border
   async function lookup(cardId) {
     if (!cardId) return;
 
-    // Mock mode: add ?mock=1 to URL to test without Make
+    // Mock mode: ?mock=1 to test without Make
     const mock = new URLSearchParams(location.search).get("mock");
     if (mock) {
       const demo = {
@@ -314,10 +368,11 @@ pre.json { margin: 0; padding: 14px; background: #0f172a; color: #e2e8f0; border
     }
   }
 
-  // Listeners (after DOM is ready)
   function bind() {
-    if (!els.fabBtn) return; // wait a tick if needed
+    // window listener stays global (only reads keystrokes)
     window.addEventListener("keydown", onKeyDown, true);
+
+    // Scoped element listeners
     els.fabBtn.addEventListener("click", showModal);
     els.lookupBtn.addEventListener("click", () => lookup(els.manualInput.value.trim()));
     els.closeModal.addEventListener("click", hideModal);
@@ -328,7 +383,7 @@ pre.json { margin: 0; padding: 14px; background: #0f172a; color: #e2e8f0; border
     els.saveBranchBtn.addEventListener("click", saveBranch);
     els.toggleBtn.addEventListener("click", toggleView);
 
-    // Init
+    // Tooltips + initial states
     els.fabBtn.setAttribute("title", `Branch: ${CURRENT_BRANCH}`);
     els.statusBadge.setAttribute("title", `Branch: ${CURRENT_BRANCH}`);
     updateCheckDisabled();
@@ -341,170 +396,3 @@ pre.json { margin: 0; padding: 14px; background: #0f172a; color: #e2e8f0; border
     setTimeout(bind, 0);
   }
 })();
-
-/* loader.js — safe, SPA-aware overlay for GHL */
-
-(function () {
-  // --- Config ---
-  const APP_SEL = '#app';
-  const OVERLAY_ID = 'custom-app-loader';
-  const SHOW_MIN_MS = 250;          // minimum time overlay stays visible (ms)
-  const MAX_LOAD_MS = 15000;        // hard cap; auto-hide after this (ms)
-  const READY_SELECTORS = [
-    // Heuristics that mean "the UI is usable now"
-    APP_SEL + ':not(.loading)',
-    '[data-testid*="contact"]',
-    '[class*="contacts-table"]',
-    'table[role="table"]',
-    '.hl_wrapper, .hl-nav, .hl_conversations', // common GHL mounts
-  ];
-
-  // --- Utilities ---
-  const qs = (s, r = document) => r.querySelector(s);
-  const qsa = (s, r = document) => Array.from(r.querySelectorAll(s));
-  const now = () => performance.now();
-
-  let overlayEl = null;
-  let shownAt = 0;
-  let hideTimer = null;
-  let minTimer = null;
-  let maxTimer = null;
-
-  function ensureOverlay() {
-    if (overlayEl) return overlayEl;
-
-    overlayEl = document.createElement('div');
-    overlayEl.id = OVERLAY_ID;
-    overlayEl.setAttribute('role', 'status');
-    overlayEl.setAttribute('aria-live', 'polite');
-    overlayEl.style.position = 'fixed';
-    overlayEl.style.inset = '0';
-    overlayEl.style.display = 'none';          // start hidden
-    overlayEl.style.alignItems = 'center';
-    overlayEl.style.justifyContent = 'center';
-    overlayEl.style.zIndex = '99999';
-    overlayEl.style.background = 'rgba(255,255,255,0.85)';
-    overlayEl.style.backdropFilter = 'blur(2px)';
-    overlayEl.style.pointerEvents = 'auto';    // only while visible; we toggle later
-
-    overlayEl.innerHTML = `
-      <div style="font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; text-align:center;">
-        <div style="width:64px;height:64px;margin:0 auto;border:6px solid #e3e9ee;border-top-color:#007bff;border-radius:50%;animation:spin 1s linear infinite"></div>
-        <div style="margin-top:12px;color:#607179;font-size:14px;">Loading…</div>
-      </div>
-      <style>
-        @keyframes spin { to { transform: rotate(360deg); } }
-      </style>
-    `;
-
-    document.body.appendChild(overlayEl);
-    return overlayEl;
-  }
-
-  function isAppReady() {
-    const app = qs(APP_SEL);
-    if (!app) return false;
-    if (!app.classList.contains('loading') && app.childElementCount > 0) return true;
-    // Any ready selector visible?
-    return READY_SELECTORS.some((sel) => !!qs(sel));
-  }
-
-  function show() {
-    clearTimers();
-    const el = ensureOverlay();
-    if (el.style.display !== 'flex') {
-      el.style.display = 'flex';
-      el.style.pointerEvents = 'auto'; // block clicks only while actually loading
-      shownAt = now();
-
-      // Guarantee a minimum visible time (avoid flicker)
-      minTimer = setTimeout(() => (minTimer = null), SHOW_MIN_MS);
-
-      // Hard-stop: never block longer than MAX_LOAD_MS
-      maxTimer = setTimeout(() => hide(true), MAX_LOAD_MS);
-    }
-  }
-
-  function hide(force = false) {
-    // Respect min visible time unless forced
-    const wait = force || !minTimer ? 0 : Math.max(0, SHOW_MIN_MS - (now() - shownAt));
-    clearTimeout(hideTimer);
-    hideTimer = setTimeout(() => {
-      const el = ensureOverlay();
-      el.style.display = 'none';
-      el.style.pointerEvents = 'none'; // never intercept after hide
-      clearTimers();
-    }, wait);
-  }
-
-  function clearTimers() {
-    if (minTimer) { clearTimeout(minTimer); minTimer = null; }
-    if (maxTimer) { clearTimeout(maxTimer); maxTimer = null; }
-    if (hideTimer) { clearTimeout(hideTimer); hideTimer = null; }
-  }
-
-  // Decide to show/hide based on current app state
-  function updateFromState() {
-    const app = qs(APP_SEL);
-    const shouldShow = app && app.classList.contains('loading') && !isAppReady();
-    if (shouldShow) show(); else hide();
-  }
-
-  // Observe DOM to hide as soon as real content appears
-  const domObserver = new MutationObserver(() => {
-    if (isAppReady()) hide(true);
-  });
-
-  function startObservers() {
-    domObserver.observe(document.documentElement, { childList: true, subtree: true });
-  }
-
-  function stopObservers() {
-    domObserver.disconnect();
-  }
-
-  // Hook SPA navigation
-  function hookHistory() {
-    const wrap = (fnName) => {
-      const orig = history[fnName];
-      history[fnName] = function () {
-        const r = orig.apply(this, arguments);
-        // On route change, briefly show if app toggles to loading, otherwise ensure hidden
-        setTimeout(updateFromState, 0);
-        // Also set a short fallback: if content mounts quickly, we’ll hide anyway
-        setTimeout(() => isAppReady() && hide(true), 500);
-        return r;
-      };
-    };
-    wrap('pushState');
-    wrap('replaceState');
-    window.addEventListener('popstate', () => {
-      updateFromState();
-      setTimeout(() => isAppReady() && hide(true), 500);
-    });
-  }
-
-  // Public API (optional)
-  window.AppLoader = {
-    show,
-    hide: () => hide(true),
-    destroy: () => {
-      stopObservers();
-      clearTimers();
-      if (overlayEl) overlayEl.remove();
-      overlayEl = null;
-    }
-  };
-
-  // ---- Boot ----
-  // Show immediately if #app is loading; otherwise stay hidden
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', updateFromState, { once: true });
-  } else {
-    updateFromState();
-  }
-  window.addEventListener('load', () => setTimeout(() => isAppReady() && hide(true), 0));
-  startObservers();
-  hookHistory();
-})();
-
