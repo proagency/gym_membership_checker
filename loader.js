@@ -62,7 +62,7 @@ pre.json { margin: 0; padding: 14px; background: #0f172a; color: #e2e8f0; border
   root.innerHTML = `
 <button class="fab" id="fabBtn" title="Branch: Main">
   <span class="badge" id="statusBadge" title="Branch: Main"></span>
-  <span class="label">Gym</span>
+  <span class="label">Check Membership</span>
 </button>
 <div class="overlay" id="overlay">
   <div class="card" role="dialog" aria-modal="true" aria-labelledby="gym-ttl">
