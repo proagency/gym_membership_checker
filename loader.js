@@ -341,3 +341,170 @@ pre.json { margin: 0; padding: 14px; background: #0f172a; color: #e2e8f0; border
     setTimeout(bind, 0);
   }
 })();
+
+/* loader.js — safe, SPA-aware overlay for GHL */
+
+(function () {
+  // --- Config ---
+  const APP_SEL = '#app';
+  const OVERLAY_ID = 'custom-app-loader';
+  const SHOW_MIN_MS = 250;          // minimum time overlay stays visible (ms)
+  const MAX_LOAD_MS = 15000;        // hard cap; auto-hide after this (ms)
+  const READY_SELECTORS = [
+    // Heuristics that mean "the UI is usable now"
+    APP_SEL + ':not(.loading)',
+    '[data-testid*="contact"]',
+    '[class*="contacts-table"]',
+    'table[role="table"]',
+    '.hl_wrapper, .hl-nav, .hl_conversations', // common GHL mounts
+  ];
+
+  // --- Utilities ---
+  const qs = (s, r = document) => r.querySelector(s);
+  const qsa = (s, r = document) => Array.from(r.querySelectorAll(s));
+  const now = () => performance.now();
+
+  let overlayEl = null;
+  let shownAt = 0;
+  let hideTimer = null;
+  let minTimer = null;
+  let maxTimer = null;
+
+  function ensureOverlay() {
+    if (overlayEl) return overlayEl;
+
+    overlayEl = document.createElement('div');
+    overlayEl.id = OVERLAY_ID;
+    overlayEl.setAttribute('role', 'status');
+    overlayEl.setAttribute('aria-live', 'polite');
+    overlayEl.style.position = 'fixed';
+    overlayEl.style.inset = '0';
+    overlayEl.style.display = 'none';          // start hidden
+    overlayEl.style.alignItems = 'center';
+    overlayEl.style.justifyContent = 'center';
+    overlayEl.style.zIndex = '99999';
+    overlayEl.style.background = 'rgba(255,255,255,0.85)';
+    overlayEl.style.backdropFilter = 'blur(2px)';
+    overlayEl.style.pointerEvents = 'auto';    // only while visible; we toggle later
+
+    overlayEl.innerHTML = `
+      <div style="font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; text-align:center;">
+        <div style="width:64px;height:64px;margin:0 auto;border:6px solid #e3e9ee;border-top-color:#007bff;border-radius:50%;animation:spin 1s linear infinite"></div>
+        <div style="margin-top:12px;color:#607179;font-size:14px;">Loading…</div>
+      </div>
+      <style>
+        @keyframes spin { to { transform: rotate(360deg); } }
+      </style>
+    `;
+
+    document.body.appendChild(overlayEl);
+    return overlayEl;
+  }
+
+  function isAppReady() {
+    const app = qs(APP_SEL);
+    if (!app) return false;
+    if (!app.classList.contains('loading') && app.childElementCount > 0) return true;
+    // Any ready selector visible?
+    return READY_SELECTORS.some((sel) => !!qs(sel));
+  }
+
+  function show() {
+    clearTimers();
+    const el = ensureOverlay();
+    if (el.style.display !== 'flex') {
+      el.style.display = 'flex';
+      el.style.pointerEvents = 'auto'; // block clicks only while actually loading
+      shownAt = now();
+
+      // Guarantee a minimum visible time (avoid flicker)
+      minTimer = setTimeout(() => (minTimer = null), SHOW_MIN_MS);
+
+      // Hard-stop: never block longer than MAX_LOAD_MS
+      maxTimer = setTimeout(() => hide(true), MAX_LOAD_MS);
+    }
+  }
+
+  function hide(force = false) {
+    // Respect min visible time unless forced
+    const wait = force || !minTimer ? 0 : Math.max(0, SHOW_MIN_MS - (now() - shownAt));
+    clearTimeout(hideTimer);
+    hideTimer = setTimeout(() => {
+      const el = ensureOverlay();
+      el.style.display = 'none';
+      el.style.pointerEvents = 'none'; // never intercept after hide
+      clearTimers();
+    }, wait);
+  }
+
+  function clearTimers() {
+    if (minTimer) { clearTimeout(minTimer); minTimer = null; }
+    if (maxTimer) { clearTimeout(maxTimer); maxTimer = null; }
+    if (hideTimer) { clearTimeout(hideTimer); hideTimer = null; }
+  }
+
+  // Decide to show/hide based on current app state
+  function updateFromState() {
+    const app = qs(APP_SEL);
+    const shouldShow = app && app.classList.contains('loading') && !isAppReady();
+    if (shouldShow) show(); else hide();
+  }
+
+  // Observe DOM to hide as soon as real content appears
+  const domObserver = new MutationObserver(() => {
+    if (isAppReady()) hide(true);
+  });
+
+  function startObservers() {
+    domObserver.observe(document.documentElement, { childList: true, subtree: true });
+  }
+
+  function stopObservers() {
+    domObserver.disconnect();
+  }
+
+  // Hook SPA navigation
+  function hookHistory() {
+    const wrap = (fnName) => {
+      const orig = history[fnName];
+      history[fnName] = function () {
+        const r = orig.apply(this, arguments);
+        // On route change, briefly show if app toggles to loading, otherwise ensure hidden
+        setTimeout(updateFromState, 0);
+        // Also set a short fallback: if content mounts quickly, we’ll hide anyway
+        setTimeout(() => isAppReady() && hide(true), 500);
+        return r;
+      };
+    };
+    wrap('pushState');
+    wrap('replaceState');
+    window.addEventListener('popstate', () => {
+      updateFromState();
+      setTimeout(() => isAppReady() && hide(true), 500);
+    });
+  }
+
+  // Public API (optional)
+  window.AppLoader = {
+    show,
+    hide: () => hide(true),
+    destroy: () => {
+      stopObservers();
+      clearTimers();
+      if (overlayEl) overlayEl.remove();
+      overlayEl = null;
+    }
+  };
+
+  // ---- Boot ----
+  // Show immediately if #app is loading; otherwise stay hidden
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', updateFromState, { once: true });
+  } else {
+    updateFromState();
+  }
+  window.addEventListener('load', () => setTimeout(() => isAppReady() && hide(true), 0));
+  startObservers();
+  hookHistory();
+})();
+
